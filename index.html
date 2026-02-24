@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wedding Planner App</title>
+<style>
+  :root {
+    --rose-gold: #b76e79;
+    --rose-gold-light: #f7d1d1;
+    --complement1: #2c2c2c; /* dark background */
+    --complement2: #fff;     /* text */
+  }
+
+  body { background-color: var(--complement1); color: var(--complement2); font-family: Arial, sans-serif; margin:0; padding:0;}
+  header { background-color: #1c1c1c; padding:1rem; text-align:center; font-size:2rem; font-weight:bold; color: var(--rose-gold);}
+  .container { max-width:1200px; margin:auto; padding:2rem;}
+  .hidden { display:none; }
+  .form-group { margin-bottom:1rem; }
+  input, select, textarea { width:100%; padding:0.5rem; border-radius:5px; border:1px solid #b76e79; background-color:#222; color:#fff; }
+  input::placeholder, textarea::placeholder { color:#aaa; }
+  .button { background-color: var(--rose-gold); color:#fff; border:none; padding:0.5rem 1rem; margin-top:0.5rem; cursor:pointer; border-radius:5px; }
+  .button:hover { background-color: var(--rose-gold-light); color:#000; }
+  .card { background-color:#1c1c1c; border:1px solid #b76e79; padding:1rem; margin-bottom:1rem; border-radius:8px; }
+  .dashboard { display:flex; flex-wrap:wrap; gap:1rem; }
+  .dashboard .card { flex:1 1 calc(33% - 1rem); }
+  h2 { border-bottom:1px solid #b76e79; padding-bottom:0.5rem; margin-top:2rem; color: var(--rose-gold);}
+  .logout { position:fixed; top:1rem; right:1rem; }
+  textarea { resize: vertical; }
+  label { font-weight:bold; }
+</style>
+</head>
+<body>
+
+<header>Wedding Planner App</header>
+<div class="logout hidden">
+  <button class="button" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="section">
+    <h2>Login</h2>
+    <div class="form-group">
+      <input type="text" id="username" placeholder="Your Name">
+    </div>
+    <div class="form-group">
+      <select id="roleSelect">
+        <option value="bride">Bride-to-Be</option>
+        <option value="vendor">Vendor</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button class="button" onclick="login()">Login</button>
+  </div>
+
+  <!-- BRIDE DASHBOARD -->
+  <div id="brideDashboard" class="hidden">
+    <h2>Bride-to-Be Dashboard</h2>
+
+    <!-- Wedding Info -->
+    <div class="card">
+      <h3>Wedding Info</h3>
+      <div class="form-group"><input type="date" id="weddingDate"></div>
+      <div class="form-group"><input type="number" id="guestCount" placeholder="Guest Count"></div>
+      <div class="form-group"><input type="number" id="budget" placeholder="Budget (ZAR)"></div>
+      <div class="form-group">
+        <label>Services Already Booked:</label>
+        <select multiple id="bookedServices">
+          <option value="venue">Venue</option>
+          <option value="catering">Catering</option>
+          <option value="decor">Decor</option>
+          <option value="makeup">Makeup</option>
+          <option value="photographer">Photographer</option>
+          <option value="entertainment">Entertainment</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Service-Specific Questions -->
+    <div id="serviceQuestions" class="card hidden">
+      <h3>Service Preferences</h3>
+      <div id="serviceForm"></div>
+      <button class="button" onclick="saveServiceAnswers()">Save Preferences</button>
+    </div>
+
+    <!-- Recommended Vendors -->
+    <div class="card hidden" id="vendorRecommendationsCard">
+      <h3>Recommended Vendors</h3>
+      <div class="dashboard" id="recommendedVendors"></div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card">
+      <h3>Timeline Planner</h3>
+      <ul id="timeline"></ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let role = '';
+let username = '';
+let selectedService = '';
+const vendors = [
+  {name:'Vineyard Venue', category:'venue', plan:'platinum', featured:true},
+  {name:'City Hotel', category:'venue', plan:'gold', featured:false},
+  {name:'Luxury Catering', category:'catering', plan:'platinum', featured:true},
+  {name:'Classic Decor', category:'decor', plan:'gold', featured:false},
+  {name:'Makeup Magic', category:'makeup', plan:'gold', featured:false},
+  {name:'Flash Photographer', category:'photographer', plan:'standard', featured:false},
+];
+
+const timelineTasks = [
+  {monthsBefore:6, task:'Book venue & caterer'},
+  {monthsBefore:5, task:'Book photographer & entertainment'},
+  {monthsBefore:4, task:'Send save-the-date cards'},
+  {monthsBefore:3, task:'Plan wardrobe & makeup'},
+  {monthsBefore:2, task:'Finalize guest list & invitations'},
+  {monthsBefore:1, task:'Confirm vendors & seating'},
+  {monthsBefore:0, task:'Wedding Day!'}
+];
+
+function login(){
+  username = document.getElementById('username').value || 'Anonymous';
+  role = document.getElementById('roleSelect').value;
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.querySelector('.logout').classList.remove('hidden');
+  if(role==='bride') document.getElementById('brideDashboard').classList.remove('hidden');
+  renderTimeline();
+  showServiceQuestions();
+}
+
+function logout(){ location.reload(); }
+
+function renderTimeline(){
+  const ul = document.getElementById('timeline');
+  ul.innerHTML='';
+  timelineTasks.forEach(t=>{
+    const li = document.createElement('li');
+    li.textContent = `${t.monthsBefore} months before: ${t.task}`;
+    ul.appendChild(li);
+  });
+}
+
+function showServiceQuestions(){
+  document.getElementById('serviceQuestions').classList.remove('hidden');
+  const serviceForm = document.getElementById('serviceForm');
+  serviceForm.innerHTML = '';
+
+  const services = ['venue','catering','decor'];
+  services.forEach(service=>{
+    const div = document.createElement('div');
+    div.classList.add('form-group');
+    div.innerHTML = `<h4>${service.charAt(0).toUpperCase() + service.slice(1)} Preferences</h4>`;
+    if(service==='venue'){
+      div.innerHTML += `
+        <input type="number" placeholder="Guest Count" id="venueGuest">
+        <select id="venueCatering"><option value="yes">Catering Included</option><option value="no">Not Included</option></select>
+        <select id="venueDecor"><option value="yes">Decor Included</option><option value="no">Not Included</option></select>
+        <input type="text" placeholder="Color Scheme" id="venueColors">
+        <select id="venuePackage"><option value="all">All Inclusive</option><option value="partial">Partial</option></select>
+        <select id="venueAccomodation"><option value="yes">Guest Accommodation</option><option value="no">None</option></select>
+      `;
+    }
+    if(service==='catering'){
+      div.innerHTML += `
+        <select id="cateringHalaal"><option value="yes">Halaal</option><option value="no">No</option></select>
+        <select id="cateringStyle"><option value="buffet">Buffet</option><option value="3course">3 Course Meal</option></select>
+      `;
+    }
+    if(service==='decor'){
+      div.innerHTML += `
+        <select id="decorStyle"><option value="florals">Florals</option><option value="boho">Boho</option><option value="simplistic">Simplistic</option><option value="rustic">Rustic</option></select>
+      `;
+    }
+    serviceForm.appendChild(div);
+  });
+}
+
+function saveServiceAnswers(){
+  // For portfolio, we just simulate recommended vendors based on preferences
+  document.getElementById('vendorRecommendationsCard').classList.remove('hidden');
+  const booked = Array.from(document.getElementById('bookedServices').selectedOptions).map(o=>o.value);
+  const recommended = vendors.filter(v=>!booked.includes(v.category)).sort((a,b)=>a.plan.localeCompare(b.plan));
+  const container = document.getElementById('recommendedVendors');
+  container.innerHTML = '';
+  recommended.forEach(v=>{
+    const card = document.createElement('div');
+    card.classList.add('card');
+    card.innerHTML = `<strong>${v.name}</strong><br>Category: ${v.category}<br>Plan: ${v.plan}${v.featured ? ' - Featured':''}`;
+    container.appendChild(card);
+  });
+  alert('Preferences saved! Recommended vendors are displayed.');
+}
+</script>
+
+</body>
+</html>
